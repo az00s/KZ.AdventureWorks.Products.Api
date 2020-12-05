@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using KZ.AdventureWorks.Products.Api.Models;
+using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace KZ.AdventureWorks.Products.Api.Controllers
 {
@@ -14,10 +16,12 @@ namespace KZ.AdventureWorks.Products.Api.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly AdventureWorks2019Context _context;
+        private readonly ILogger<ProductsController> _logger;
 
-        public ProductsController(AdventureWorks2019Context context)
+        public ProductsController(AdventureWorks2019Context context, ILogger<ProductsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         /// <summary>
@@ -47,11 +51,20 @@ namespace KZ.AdventureWorks.Products.Api.Controllers
         [ProducesResponseType(500)]
         public async Task<ActionResult<Product>> GetProduct(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            Product product = null;
 
-            if (product == null)
+            try
             {
-                return NotFound();
+                product = await _context.Products.FindAsync(id);
+
+                if (product == null)
+                {
+                    return NotFound();
+                }
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
             }
 
             return product;
